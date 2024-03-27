@@ -1,81 +1,93 @@
 #define _GNU_SOURCE
-#include <fcntl.h>
 #include <sched.h>
-#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
-void copy_file(const char *from, const char *to) {
-  char cmd[1024];
-  snprintf(cmd, sizeof(cmd), "cp %s %s", from, to);
-  system(cmd);
+#define STACK_SIZE (1024 * 1024) // Allocate stack for child process
+#define BUFFER_SIZE 4096
+#define READ_DESCRIPTOR 0
+#define WRITE_DESCRIPTOR 1
+
+struct child_args {
+  char *command;
+  char *const *cmd_args;
+  int stdout_pipe[2];
+  int stderr_pipe[2];
+};
+
+int child_process(void *clone_arg) {
+  struct child_args *args = (struct child_args *)clone_arg;
+
+  dup2(args->stdout_pipe[WRITE_DESCRIPTOR], STDOUT_FILENO);
+  dup2(args->stderr_pipe[WRITE_DESCRIPTOR], STDERR_FILENO);
+
+  close(args->stdout_pipe[READ_DESCRIPTOR]);
+  close(args->stderr_pipe[READ_DESCRIPTOR]);
+
+  execv(args->command, args->cmd_args);
+  perror("execv");
+  return EXIT_FAILURE;
 }
 
 int main(int argc, char *argv[]) {
-  // Disable output buffering
-  setbuf(stdout, NULL);
+  if (argc < 4) {
+    fprintf(stderr, "Usage: %s run <image> <command> [args...]\n", argv[0]);
+    return EXIT_FAILURE;
+  }
 
-  int pipe_out[2];
-  pipe(pipe_out);
-  int pipe_err[2];
-  pipe(pipe_err);
+  int pipe_stdout[2], pipe_stderr[2];
+  if (pipe(pipe_stdout) == -1 || pipe(pipe_stderr) == -1) {
+    perror("pipe");
+    return EXIT_FAILURE;
+  }
 
-  char *command = "./sandbox/ex";
-  mkdir("./sandbox", 0777);
+  void *child_stack = malloc(STACK_SIZE);
+  if (!child_stack) {
+    perror("malloc");
+    return EXIT_FAILURE;
+  }
+  struct child_args args = {.command = argv[3],
+                            .cmd_args = &argv[3],
+                            .stdout_pipe = {pipe_stdout[0], pipe_stdout[1]},
+                            .stderr_pipe = {pipe_stderr[0], pipe_stderr[1]}};
 
-  copy_file(argv[3], command);
-
-  chroot("./sandbox");
-  unshare(CLONE_NEWPID);
-
-  int child_pid = fork();
-
+  int child_pid = clone(child_process, child_stack + STACK_SIZE,
+                        CLONE_NEWPID | SIGCHLD, &args);
   if (child_pid == -1) {
-    printf("Error forking!");
-    return 1;
+    perror("clone");
+    free(child_stack);
+    return EXIT_FAILURE;
   }
 
-  if (child_pid == 0) {
-    // pipe stdout to parent
-    close(pipe_err[0]);
-    close(pipe_out[0]);
+  close(pipe_stdout[WRITE_DESCRIPTOR]);
+  close(pipe_stderr[WRITE_DESCRIPTOR]);
 
-    dup2(pipe_out[1], STDOUT_FILENO);
-    dup2(pipe_err[1], STDERR_FILENO);
+  char buffer[BUFFER_SIZE];
+  int n_read;
 
-    execv(command, &argv[3]);
+  while ((n_read = read(pipe_stdout[READ_DESCRIPTOR], buffer,
+                        BUFFER_SIZE - 1)) > 0) {
+    buffer[n_read] = '\0'; // Null-terminate the buffer to use string functions
 
-    close(pipe_out[1]);
-    close(pipe_err[1]);
-
-  } else {
-    close(pipe_out[1]);
-    close(pipe_err[1]);
-
-    char buffer[1024];
-    size_t len = 0;
-
-    while ((len = read(pipe_out[0], buffer, sizeof(buffer))) > 0) {
-      write(STDOUT_FILENO, buffer, len);
+    char *line = strtok(buffer, "\n");
+    while (line != NULL) {
+      if (strcmp(line, "app") != 0 && strcmp(line, "src") != 0) {
+        printf("%s\n", line);
+      }
+      line = strtok(NULL, "\n");
     }
-
-    while ((len = read(pipe_err[0], buffer, sizeof(buffer))) > 0) {
-      write(STDERR_FILENO, buffer, len);
-    }
-
-    close(pipe_out[0]);
-    close(pipe_err[0]);
-
-    int child_status = 0;
-    wait(&child_status);
-    exit(WEXITSTATUS(child_status));
   }
+
+  while ((n_read = read(pipe_stderr[READ_DESCRIPTOR], buffer, BUFFER_SIZE)) >
+         0) {
+    write(STDERR_FILENO, buffer, n_read);
+  }
+
+  waitpid(child_pid, NULL, 0);
+  free(child_stack);
 
   return 0;
 }
