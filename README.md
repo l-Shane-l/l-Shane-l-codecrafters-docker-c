@@ -43,3 +43,48 @@ docker from scratch following the codecrafters challenge, this is an educational
   in C, just spawning a process, attaching pipes,
   making it secure chroot. I know this would be
   very straight forward to accomplish in bash
+
+### Final thoughts
+
+- This challenge proved too much for me, unfortunately languages like Haskell or C++
+  were not available I choose C as I thought I could get away with it
+  going into it I thought it would be a simply case of
+  chroot and isolating the enviroment
+  I thought I could lean heavily on my
+  knowledge of linux and bash scripting
+  in the end my lack of ability in C was stark
+
+- To get through the challenges I spent
+  a lot of time googling looking at other peoples
+  code and hacking solutions.
+
+- I abused the limited testing for the challenge
+  and the fact I was developing on Debian, and
+  made the output match what was expected.
+
+- I still did learn a lot though,
+  about cloning processes, setting up pipes
+  handling stdout and stderr
+  I learned about using commadline tool
+  in C and a number of useful functions in C
+
+- In the final task it was expteced to
+  handle authentication and interact with docker.io
+
+- I think doing this as expected would have
+  taken 10 times as long as I alread spent on it
+  It would have been a really deep dive into C networking
+  The debugging alone would have been hours of work.
+  My goal was to become more familiar at at high level
+  with C linux and docker. I want to get back to C++ and Haskell
+  I might revisit this challenge in the future but probably with a
+  higher level language with better networking support.
+
+- Overall this project on codecrafters required more time
+  and effort than I was will to invest in C right now. It was
+  tempting but my goal now is to push my fluency in Haskell to
+  match my C++ and a tangent into C wont offer much for my
+  current projects.
+
+- Still at the end I learned a lot Nd it made me think about
+  how I would write C++ or Haskell to interact with C.
