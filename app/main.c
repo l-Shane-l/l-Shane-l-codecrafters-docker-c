@@ -20,7 +20,6 @@ int main(int argc, char *argv[]) {
   } else {
     // We're in parent
     wait(NULL);
-    printf("Child terminated");
   }
 
   return 0;
