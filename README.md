@@ -1,51 +1,20 @@
-[![progress-banner](https://backend.codecrafters.io/progress/docker/e09ce1cf-874e-4bed-b629-adf336624fde)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
+# Docker From Scratch
 
-This is a starting point for C solutions to the
-["Build Your Own Docker" Challenge](https://codecrafters.io/challenges/docker).
+docker from scratch following the codecrafters challenge, this is an educational project intended to better understand C and how docker works.
 
-In this challenge, you'll build a program that can pull an image from
-[Docker Hub](https://hub.docker.com/) and execute commands in it. Along the way,
-we'll learn about [chroot](https://en.wikipedia.org/wiki/Chroot),
-[kernel namespaces](https://en.wikipedia.org/wiki/Linux_namespaces), the
-[docker registry API](https://docs.docker.com/registry/spec/api/) and much more.
+## Notes
 
-**Note**: If you're viewing this repo on GitHub, head over to
-[codecrafters.io](https://codecrafters.io) to try the challenge.
+### On Stage 1 and 2
 
-# Passing the first stage
+- code worked with little modification but this was a
+  quirk of the testing and not intended.
 
-The entry point for your Docker implementation is `app/main.c`. Study and
-uncomment the relevant code, and push your changes to pass the first stage:
+- It took me a long time to understand the execv command,
+  images and pipes, specifically stderr and stdout.
 
-```sh
-git add .
-git commit -m "pass 1st stage" # any msg
-git push origin master
-```
+### Stage 3
 
-That's all!
-
-# Stage 2 & beyond
-
-Note: This section is for stages 2 and beyond.
-
-You'll use linux-specific syscalls in this challenge. so we'll run your code
-_inside_ a Docker container.
-
-Please ensure you have [Docker installed](https://docs.docker.com/get-docker/)
-locally.
-
-Next, add a [shell alias](https://shapeshed.com/unix-alias/):
-
-```sh
-alias mydocker='docker build -t mydocker . && docker run --cap-add="SYS_ADMIN" mydocker'
-```
-
-(The `--cap-add="SYS_ADMIN"` flag is required to create
-[PID Namespaces](https://man7.org/linux/man-pages/man7/pid_namespaces.7.html))
-
-You can now execute your program like this:
-
-```sh
-mydocker run ubuntu:latest /usr/local/bin/docker-explorer echo hey
-```
+- This one took a while and I think a C programmer would have done it in 5 mins.
+  In the end I had to look up the solution, I nearly
+  had the answer but failed to return the correct
+  value at the end of the if statement.

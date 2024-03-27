@@ -55,8 +55,16 @@ int main(int argc, char *argv[]) {
     close(stdout_pipe[1]);
     close(stderr_pipe[1]);
 
-    // Wait for child to complete
-    wait(NULL);
+    int status;
+    int child_exit_code = -1;
+
+    // wait child process exit
+    waitpid(child_pid, &status, 0);
+
+    if (WIFEXITED(status)) {
+      // child process exit normal
+      child_exit_code = WEXITSTATUS(status);
+    }
 
     // Read from stdout pipe
     int bytes_read = read(stdout_pipe[0], buffer, sizeof(buffer) - 1);
@@ -75,6 +83,8 @@ int main(int argc, char *argv[]) {
     // Close the read-end of the pipes
     close(stdout_pipe[0]);
     close(stderr_pipe[0]);
+
+    return child_exit_code;
   }
 
   return 0;
